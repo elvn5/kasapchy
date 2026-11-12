@@ -77,7 +77,7 @@ func run() error {
 	if port == "" {
 		port = "8080"
 	}
-	server := &http.Server{Addr: ":" + port, Handler: (httpapi.Handler{Service: service, Log: log}).Router(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	server := &http.Server{Addr: ":" + port, Handler: (httpapi.Handler{Service: service, Log: log, Operator: os.Getenv("MARKET_OPERATOR_NAME"), SupportEmail: os.Getenv("MARKET_SUPPORT_EMAIL")}).Router(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	errc := make(chan error, 1)
 	go func() { log.Info("marketplace listening", "port", port); errc <- server.ListenAndServe() }()
 	select {

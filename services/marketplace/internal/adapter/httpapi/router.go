@@ -13,8 +13,10 @@ import (
 )
 
 type Handler struct {
-	Service *usecase.Service
-	Log     *slog.Logger
+	Operator     string
+	SupportEmail string
+	Service      *usecase.Service
+	Log          *slog.Logger
 }
 
 func (h Handler) fail(c *gin.Context, e error) {
@@ -57,6 +59,7 @@ func (h Handler) Router() *gin.Engine {
 		c.Next()
 	})
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	h.web(r)
 	api := r.Group("/v1")
 	api.POST("/auth/email/request", func(c *gin.Context) {
 		var req struct{ Email, Role string }
