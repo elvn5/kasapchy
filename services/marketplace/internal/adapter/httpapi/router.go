@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/your-org/app/marketplace/internal/domain"
@@ -13,10 +14,12 @@ import (
 )
 
 type Handler struct {
-	Operator     string
-	SupportEmail string
-	Service      *usecase.Service
-	Log          *slog.Logger
+	Readiness      func(context.Context) error
+	TrustedProxies []string
+	Operator       string
+	SupportEmail   string
+	Service        *usecase.Service
+	Log            *slog.Logger
 }
 
 func (h Handler) fail(c *gin.Context, e error) {
@@ -51,7 +54,9 @@ func user(c *gin.Context) domain.User { return c.MustGet("user").(domain.User) }
 func (h Handler) Router() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
-	_ = r.SetTrustedProxies(nil)
+	if err := r.SetTrustedProxies(h.TrustedProxies); err != nil {
+		panic("invalid trusted proxy configuration")
+	}
 	r.Use(func(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 32<<10)
 		c.Header("X-Content-Type-Options", "nosniff")
@@ -59,6 +64,15 @@ func (h Handler) Router() *gin.Engine {
 		c.Next()
 	})
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	r.GET("/readyz", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		if h.Readiness == nil || h.Readiness(ctx) != nil {
+			c.JSON(503, gin.H{"status": "unavailable"})
+			return
+		}
+		c.JSON(200, gin.H{"status": "ready"})
+	})
 	h.web(r)
 	api := r.Group("/v1")
 	api.POST("/auth/email/request", func(c *gin.Context) {

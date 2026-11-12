@@ -1,0 +1,8 @@
+[Unit]
+Description=Check Kasapchy readiness, TLS, disk and backup freshness
+After=network-online.target docker.service
+[Service]
+Type=oneshot
+ExecStart=/opt/kasapchy/ops/monitor.sh
+UMask=0077
+TimeoutStartSec=45

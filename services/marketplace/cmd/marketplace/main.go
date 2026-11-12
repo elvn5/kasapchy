@@ -77,7 +77,17 @@ func run() error {
 	if port == "" {
 		port = "8080"
 	}
-	server := &http.Server{Addr: ":" + port, Handler: (httpapi.Handler{Service: service, Log: log, Operator: os.Getenv("MARKET_OPERATOR_NAME"), SupportEmail: os.Getenv("MARKET_SUPPORT_EMAIL")}).Router(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	var trustedProxies []string
+	if configured := strings.TrimSpace(os.Getenv("MARKET_TRUSTED_PROXIES")); configured != "" {
+		for _, proxy := range strings.Split(configured, ",") {
+			proxy = strings.TrimSpace(proxy)
+			if net.ParseIP(proxy) == nil {
+				return errors.New("MARKET_TRUSTED_PROXIES must contain exact proxy IPs")
+			}
+			trustedProxies = append(trustedProxies, proxy)
+		}
+	}
+	server := &http.Server{Addr: ":" + port, Handler: (httpapi.Handler{Readiness: pool.Ping, TrustedProxies: trustedProxies, Service: service, Log: log, Operator: os.Getenv("MARKET_OPERATOR_NAME"), SupportEmail: os.Getenv("MARKET_SUPPORT_EMAIL")}).Router(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	errc := make(chan error, 1)
 	go func() { log.Info("marketplace listening", "port", port); errc <- server.ListenAndServe() }()
 	select {

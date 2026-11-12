@@ -1,0 +1,12 @@
+[Unit]
+Description=Encrypted Kasapchy PostgreSQL backup
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+ExecStart=/opt/kasapchy/ops/backup.sh
+UMask=0077
+TimeoutStartSec=900
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

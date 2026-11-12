@@ -23,6 +23,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
+      MARKET_TRUSTED_PROXIES: ${MARKET_TRUSTED_PROXIES:-}
       APP_ENV: ${APP_ENV:?set APP_ENV}
       MARKET_DATABASE_URL: postgres://marketplace:${MARKET_DB_PASSWORD}@db:5432/marketplace?sslmode=disable
       MARKET_OTP_SECRET: ${MARKET_OTP_SECRET:?set MARKET_OTP_SECRET}

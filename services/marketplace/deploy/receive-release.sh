@@ -25,9 +25,12 @@ with tarfile.open(sys.argv[1]) as tar:
             raise SystemExit('Unsafe release archive')
     tar.extractall(root,filter='data') if sys.version_info >= (3,12) else tar.extractall(root)
 PY
+# Preserve a recoverable database snapshot before changing containers/migrations.
+if [[ -x "$base/ops/backup.sh" && -L "$base/current" ]]; then "$base/ops/backup.sh"; fi
 docker compose --project-name kasapchy --env-file "$base/.env" -f "$release/compose.server.yml" up -d --build --remove-orphans
 for attempt in $(seq 1 30); do
-  if curl -fsS --max-time 3 http://127.0.0.1:5700/healthz >/dev/null; then
+  if curl -fsS --max-time 3 http://127.0.0.1:5700/readyz >/dev/null; then
+    if [[ -L "$base/current" ]]; then ln -sfn "$(readlink -f "$base/current")" "$base/previous"; fi
     ln -sfn "$release" "$base/current"
     printf 'Deployed %s\n' "$revision"
     exit 0
