@@ -71,7 +71,9 @@ Play App Signing Google хранит ключ подписи приложени�
   запрос заказа, статусы, OTP, отзыв сессий и удаление.
 - Подписанный demoRelease AAB собран; jarsigner подтвердил подпись; lint прошёл.
 - AAB BundleConfig требует PAGE_ALIGNMENT_16K; все 4 ELF-библиотеки имеют
-  PT_LOAD alignment 16384. Bundletool validate прошёл. Скрипт проверки — в tools.
+  PT_LOAD alignment 16384. Bundletool validate и zipalign -P 16 для
+  универсального APK прошли; APK установлен и запущен на API 30 после R8.
+  Скрипт проверки ELF — в tools.
 - Живые Google/Apple, SMTP-доставка внешним адресатам, HTTPS-домен и тест на
   физическом устройстве с 16 KB страницами ещё не проверены.
 
