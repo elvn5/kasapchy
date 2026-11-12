@@ -1,17 +1,20 @@
-# Fullstack App Template
+# Касапчы
 
-**Репозиторий-шаблон — чистый лист для новых проектов.** В нём нет никакой
-предметной логики: только инфраструктура, на которой можно сразу строить продукт —
-Go-микросервисы, админка и публичный сайт на Nuxt, Telegram-бот, Docker и CI/CD.
+Мобильное приложение рынка мяса для Android и iOS на Kotlin Multiplatform.
+В [`apps/mobile`](apps/mobile/README.md) реализованы общий интерфейс и демо-сценарии
+покупателя и касапчы. Android подключён к новому Go/Gin API
+[`services/marketplace`](services/marketplace/README.md); iOS пока работает в демо.
+Состояние подготовки к Google Play: [`RELEASE.md`](apps/mobile/play/RELEASE.md).
 
-Создайте новый репозиторий кнопкой **Use this template** на GitHub и начинайте
-писать свою бизнес-логику.
+Инфраструктура унаследована из fullstack-шаблона: Go-микросервисы, админка и
+публичный сайт на Nuxt, Telegram-бот, Docker и CI/CD.
 
 ## Что внутри
 
 | Каталог | Стек | Назначение |
 | --- | --- | --- |
 | [`services/gateway`](services/gateway) | Go + Gin | API Gateway — единственная публичная точка входа: CORS, проверка сессии, проксирование в сервисы |
+| [`services/marketplace`](services/marketplace) | Go + Gin + PostgreSQL | Email/OIDC, каталог, заказы, профиль; изолированный mobile API |
 | [`services/auth`](services/auth) | Go + Gin | Вход в админку (пароль → JWT в httpOnly-куке), `/auth/me`, logout |
 | [`services/users`](services/users) | Go + Gin + pgx | Пользователи, своя БД `users`, миграции goose |
 | [`services/bot`](services/bot) | Go + go-telegram/bot | Telegram-бот: `/start` регистрирует пользователя через `users` |
@@ -19,6 +22,7 @@ Go-микросервисы, админка и публичный сайт на 
 | [`apps/admin`](apps/admin) | Nuxt 4 + @nuxt/ui | Админ-панель: логин, главная, список пользователей |
 | [`apps/client`](apps/client) | Nuxt 4 + i18n | Публичный сайт-заглушка (ru / ky / en), SEO, sitemap |
 | [`packages/theme`](packages/theme) | Tailwind v4 | Общая цветовая схема фронтендов |
+| [`apps/mobile`](apps/mobile) | Kotlin Multiplatform + Compose | Касапчы: Android / iOS, общий интерфейс и демо-сценарии покупателя и продавца |
 
 `auth`, `users` и `bot` — это стартовые примеры: переименуйте, расширьте или
 удалите их под свой домен.
@@ -70,6 +74,20 @@ Go-микросервисы, админка и публичный сайт на 
 - Docker + Docker Compose
 
 ## Быстрый старт
+
+### Мобильное приложение «Касапчы»
+
+Самостоятельный Gradle-проект в [`apps/mobile`](apps/mobile/README.md).
+Для демо не нужны backend, Docker или `.env`: регистрация по email (код `1234`),
+Google/Apple работают как имитация входа. Требуются JDK 17 и Android SDK 36;
+для iOS — полный Xcode. Инструкции запуска и ограничения — в README мобильного проекта.
+
+```sh
+cd apps/mobile
+./gradlew :androidApp:assembleDebug :shared:jvmTest
+```
+
+### Веб-приложения и сервисы
 
 ```bash
 corepack enable

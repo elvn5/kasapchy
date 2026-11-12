@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+<rect width="1024" height="500" fill="#edf5fa"/>
+<path d="M740 0H1024V500H830Q675 280 740 0Z" fill="#007ec5"/>
+<path d="M840 0H1024V500H930Q775 280 840 0Z" fill="#0069a6"/>
+<rect x="64" y="68" width="90" height="90" rx="22" fill="#007ec5"/>
+<path d="M90 89H99V110L121 89H134L108 113L134 137H121L99 116V137H90Z" fill="#ffffff"/>
+<text x="64" y="252" font-family="Arial, sans-serif" font-weight="700" font-size="72" fill="#172d3b">касапчы</text>
+<text x="68" y="316" font-family="Arial, sans-serif" font-size="30" fill="#506a78">Мясо от местных продавцов</text>
+<rect x="68" y="369" width="126" height="5" rx="2" fill="#a7afb2"/>
+<text x="68" y="424" font-family="Arial, sans-serif" font-size="19" fill="#506a78">Рынок · Заказы · Профиль</text>
+</svg>
