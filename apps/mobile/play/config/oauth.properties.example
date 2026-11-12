@@ -1,0 +1,8 @@
+# Public IDs only; do not put OAuth secrets in mobile app or git.
+kasapchy.apiBaseUrl=https://kasapchy.api.ermekten.com
+kasapchy.privacyUrl=https://kasapchy.api.ermekten.com/privacy
+kasapchy.deletionUrl=https://kasapchy.api.ermekten.com/delete-account
+# Complete in Google Auth Platform, project kasapchy-marketplace:
+kasapchy.googleClientId=
+# Proposed Apple Services ID; NOT yet registered:
+kasapchy.appleClientId=

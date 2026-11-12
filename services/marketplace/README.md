@@ -68,7 +68,7 @@ GitHub Variable: `MARKET_DEPLOY_HOST`. Пароли БД/OTP находятся 
 После выбора домена:
 1. DNS и HTTPS reverse proxy на `127.0.0.1:5700`; не публиковать БД/Mailpit наружу.
 2. Указать реальный SMTP, sender, SPF/DKIM/DMARC; переключить `APP_ENV=production`.
-3. Настроить Google server client ID и Android client c SHA-256 сертификата Play
+3. Настроить Google server client ID и Android client c SHA-1 сертификата Play
    App Signing. Зарегистрировать Apple Services ID и return URL
    `https://<api-domain>/v1/auth/apple/callback`.
 4. Задать `MARKET_GOOGLE_CLIENT_ID`, `MARKET_APPLE_CLIENT_ID`, перезапустить API.
@@ -97,3 +97,11 @@ Nginx и certbot — конфигурация хоста, не часть Docker
 установкой vhost нужен выпущенный сертификат, затем `nginx -t` и reload.
 Открывать `/v1` в production следует после выполнения списка настроек выше и
 настройки доверенного reverse proxy; сейчас SMTP доставляет письма в Mailpit.
+
+## Резервное копирование и контроль
+
+Установлены ежедневные encrypted backups (14 дней), backup перед деплоем,
+проверка `/readyz` с PostgreSQL и systemd monitoring каждые 5 минут.
+Восстановление первой копии проверено на отдельном локальном PostgreSQL.
+Процедуры, пути ключей, ограничения offsite/уведомлений и откат:
+[deploy/OPERATIONS.md](deploy/OPERATIONS.md).
