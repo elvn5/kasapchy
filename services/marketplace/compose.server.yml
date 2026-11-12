@@ -1,0 +1,44 @@
+name: kasapchy
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: ${MARKET_DB_PASSWORD:?set MARKET_DB_PASSWORD}
+    volumes: [market-data:/var/lib/postgresql/data]
+    mem_limit: 512m
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U marketplace']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  mail:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports: ['127.0.0.1:5701:8025']
+    mem_limit: 128m
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:?set APP_ENV}
+      MARKET_DATABASE_URL: postgres://marketplace:${MARKET_DB_PASSWORD}@db:5432/marketplace?sslmode=disable
+      MARKET_OTP_SECRET: ${MARKET_OTP_SECRET:?set MARKET_OTP_SECRET}
+      MARKET_SMTP_ADDRESS: ${MARKET_SMTP_ADDRESS:?set MARKET_SMTP_ADDRESS}
+      MARKET_SMTP_USERNAME: ${MARKET_SMTP_USERNAME:-}
+      MARKET_SMTP_PASSWORD: ${MARKET_SMTP_PASSWORD:-}
+      MARKET_MAIL_FROM: ${MARKET_MAIL_FROM:?set MARKET_MAIL_FROM}
+      MARKET_GOOGLE_CLIENT_ID: ${MARKET_GOOGLE_CLIENT_ID:-}
+      MARKET_APPLE_CLIENT_ID: ${MARKET_APPLE_CLIENT_ID:-}
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ['127.0.0.1:5700:8080']
+    mem_limit: 512m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    tmpfs: ['/tmp:size=16m']
+volumes:
+  market-data:

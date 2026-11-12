@@ -1,0 +1,31 @@
+name: kasapchy-market-local
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: local-development-only
+    ports: ['127.0.0.1:55438:5432']
+    volumes: [market-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U marketplace']
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  mail:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:18025:8025', '127.0.0.1:11025:1025']
+  api:
+    build: .
+    environment:
+      APP_ENV: development
+      MARKET_DATABASE_URL: postgres://marketplace:local-development-only@db:5432/marketplace?sslmode=disable
+      MARKET_OTP_SECRET: local-only-not-for-production-rotate-before-deployment
+      MARKET_SMTP_ADDRESS: mail:1025
+      MARKET_MAIL_FROM: noreply@kasapchy.local
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ['127.0.0.1:18080:8080']
+volumes:
+  market-data:

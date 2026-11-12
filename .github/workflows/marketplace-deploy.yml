@@ -1,0 +1,57 @@
+name: Marketplace API
+on:
+  push:
+    branches: [master, codex/kmp-mobile-wireflow]
+    paths: ['services/marketplace/**', '.github/workflows/marketplace-deploy.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kasapchy-api-deploy
+  cancel-in-progress: false
+jobs:
+  test-and-deploy:
+    if: github.repository == 'elvn5/kasapchy'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: marketplace
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: marketplace
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U marketplace'
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/marketplace/go.mod
+          cache-dependency-path: services/marketplace/go.sum
+      - name: Test and vet API
+        working-directory: services/marketplace
+        env:
+          GOWORK: 'off'
+          MARKET_TEST_DATABASE_URL: postgres://marketplace:local-test-only@localhost:5432/marketplace?sslmode=disable
+        run: |
+          test -z "$(gofmt -l cmd internal migrations)"
+          go vet ./...
+          go test -race ./...
+      - name: Deploy isolated service
+        env:
+          DEPLOY_KEY: ${{ secrets.MARKET_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.MARKET_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.MARKET_DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_KEY" && test -n "$KNOWN_HOSTS" && test -n "$DEPLOY_HOST"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/kasapchy-key"
+          chmod 600 "$RUNNER_TEMP/kasapchy-key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          trap 'rm -f "$RUNNER_TEMP/kasapchy-key"' EXIT
+          tar -czf "$RUNNER_TEMP/kasapchy-source.tar.gz" --exclude=.env --exclude=.git -C services/marketplace .
+          ssh -i "$RUNNER_TEMP/kasapchy-key" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "root@$DEPLOY_HOST" "deploy $GITHUB_SHA" < "$RUNNER_TEMP/kasapchy-source.tar.gz"
