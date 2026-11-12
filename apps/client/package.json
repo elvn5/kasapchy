@@ -15,7 +15,7 @@
     "@nuxt/ui": "^4.0.0",
     "@nuxtjs/i18n": "^10.6.0",
     "@vueuse/nuxt": "^13.0.0",
-    "tailwindcss": "^4.0.0"
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "nuxt": "^4.1.0",
