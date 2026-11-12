@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@app/theme": "workspace:*",
-    "@iconify-json/lucide": "^1.2.0",
+    "@iconify-json/lucide": "^1.2.152",
     "@nuxt/ui": "^4.0.0",
     "@pinia/nuxt": "^0.11.0",
     "@vee-validate/zod": "^4.15.0",
