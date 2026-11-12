@@ -1,0 +1,21 @@
+# Hot-reload конфиг air для всех Go-сервисов (docker-compose.dev.yml).
+# Сервис выбирается переменной окружения SERVICE; air следит за всем каталогом
+# services/, поэтому правки в pkg/ тоже перезапускают сервис.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Бинарник кладётся вне смонтированного тома, чтобы сервисы не перезаписывали друг друга.
+cmd = "go build -o /tmp/app ./$SERVICE/cmd/$SERVICE"
+entrypoint = ["/tmp/app"]
+include_ext = ["go", "sql"]
+exclude_dir = ["tmp"]
+delay = 500
+poll = true
+stop_on_error = true
+
+[log]
+time = false
+
+[misc]
+clean_on_exit = false

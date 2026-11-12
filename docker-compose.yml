@@ -1,0 +1,105 @@
+# Локальная / серверная сборка из исходников (docker compose up -d --build).
+# Для деплоя готовых образов из GHCR см. docker-compose.deploy.yml.
+#
+# Наружу публикуются только gateway (API), admin, client и postgres.
+# auth / users / bot доступны лишь внутри docker-сети.
+
+x-go-service: &go-service
+  restart: unless-stopped
+  env_file: .env
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      # Базы микросервисов (database-per-service), см. deploy/postgres/init-databases.sh
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-users}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    <<: *go-service
+    build:
+      context: ./services
+      args: { SERVICE: gateway }
+    environment:
+      HTTP_PORT: "3001"
+      AUTH_SERVICE_URL: http://auth:8081
+      USERS_SERVICE_URL: http://users:8082
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      - auth
+      - users
+
+  auth:
+    <<: *go-service
+    build:
+      context: ./services
+      args: { SERVICE: auth }
+    environment:
+      HTTP_PORT: "8081"
+
+  users:
+    <<: *go-service
+    build:
+      context: ./services
+      args: { SERVICE: users }
+    environment:
+      HTTP_PORT: "8082"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bot:
+    <<: *go-service
+    build:
+      context: ./services
+      args: { SERVICE: bot }
+    environment:
+      USERS_SERVICE_URL: http://users:8082
+    depends_on:
+      - users
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      - gateway
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # SSR внутри контейнера ходит к gateway по имени сервиса;
+      # браузер — на NUXT_PUBLIC_API_BASE_URL из .env.
+      NUXT_API_INTERNAL_URL: "http://gateway:3001"
+    ports:
+      - "${CLIENT_PORT:-3002}:3000"
+    depends_on:
+      - gateway
+
+volumes:
+  postgres_data:

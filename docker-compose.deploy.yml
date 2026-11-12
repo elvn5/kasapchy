@@ -1,0 +1,95 @@
+# Деплой готовых образов из GHCR на сервере.
+# Используется скриптом deploy.sh (его вызывает .github/workflows/deploy.yml по SSH):
+#   IMAGE_PREFIX=ghcr.io/<owner>/<repo> IMAGE_TAG=<staging|версия> ./deploy.sh
+#
+# Секреты приложений берутся из файла .env рядом с этим compose на сервере.
+# Наружу (на 127.0.0.1, за nginx) публикуются только gateway, admin и client.
+
+x-go-service: &go-service
+  restart: unless-stopped
+  env_file: .env
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-users}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    <<: *go-service
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/gateway:${IMAGE_TAG:-staging}
+    environment:
+      HTTP_PORT: "3001"
+      AUTH_SERVICE_URL: http://auth:8081
+      USERS_SERVICE_URL: http://users:8082
+    ports:
+      - "127.0.0.1:${API_PORT:-3001}:3001"
+    depends_on:
+      - auth
+      - users
+
+  auth:
+    <<: *go-service
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/auth:${IMAGE_TAG:-staging}
+    environment:
+      HTTP_PORT: "8081"
+
+  users:
+    <<: *go-service
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/users:${IMAGE_TAG:-staging}
+    environment:
+      HTTP_PORT: "8082"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bot:
+    <<: *go-service
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/bot:${IMAGE_TAG:-staging}
+    environment:
+      USERS_SERVICE_URL: http://users:8082
+    depends_on:
+      - users
+
+  admin:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/admin:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Версия для футера = тег задеплоенного образа.
+      NUXT_PUBLIC_APP_VERSION: ${IMAGE_TAG:-}
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      - gateway
+
+  client:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/app}/client:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # SSR внутри сети Docker обращается к gateway по имени сервиса.
+      NUXT_API_INTERNAL_URL: "http://gateway:3001"
+      # Версия для футера = тег задеплоенного образа.
+      NUXT_PUBLIC_APP_VERSION: ${IMAGE_TAG:-}
+    ports:
+      - "127.0.0.1:${CLIENT_PORT:-3002}:3000"
+    depends_on:
+      - gateway
+
+volumes:
+  postgres_data:

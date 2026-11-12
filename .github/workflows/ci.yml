@@ -1,0 +1,55 @@
+name: CI
+
+# Проверки на каждый PR и push: Go-микросервисы (vet, test, build) и фронтенды
+# (Biome, typecheck, build).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/go.work
+          cache-dependency-path: services/*/go.sum
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+
+      - name: vet
+        run: go vet ./pkg/... ./gateway/... ./auth/... ./users/... ./bot/...
+
+      - name: test
+        run: go test ./pkg/... ./gateway/... ./auth/... ./users/... ./bot/...
+
+      - name: build
+        run: for s in gateway auth users bot; do go build -o /dev/null ./$s/cmd/$s; done
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build

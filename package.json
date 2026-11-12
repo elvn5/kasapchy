@@ -1,0 +1,21 @@
+{
+  "name": "fullstack-app-template",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev:admin": "pnpm --filter @app/admin dev",
+    "dev:client": "pnpm --filter @app/client dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.9.3"
+  }
+}

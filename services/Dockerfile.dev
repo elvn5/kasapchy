@@ -1,0 +1,8 @@
+# Образ для локальной разработки Go-сервисов с hot-reload (air).
+# Исходники монтируются томом, сервис выбирается переменной SERVICE
+# (см. docker-compose.dev.yml и services/.air.toml).
+ARG GO_VERSION=1.27
+FROM golang:${GO_VERSION}-alpine
+RUN go install github.com/air-verse/air@latest
+WORKDIR /services
+CMD ["air", "-c", ".air.toml"]

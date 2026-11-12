@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "features": "Features"
+  },
+  "header": {
+    "openBot": "Open bot",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "Built with fullstack-app-template"
+  },
+  "hero": {
+    "badge": "Project template",
+    "titleLead": "A clean slate for",
+    "titleAccent": "your next project",
+    "subtitle": "Go microservices, a Nuxt admin panel and website, a Telegram bot — ready to go. Replace this text with your own.",
+    "ctaMore": "Learn more",
+    "ctaBot": "Open bot"
+  },
+  "features": {
+    "heading": "What's inside",
+    "sub": "Baseline infrastructure to build any product on.",
+    "backend": {
+      "title": "Go microservices",
+      "text": "Gin API gateway, auth and users services, PostgreSQL with migrations."
+    },
+    "frontend": {
+      "title": "Nuxt frontends",
+      "text": "Public website with i18n and SEO, admin panel with authentication."
+    },
+    "bot": {
+      "title": "Telegram bot",
+      "text": "A Go bot that registers users through the users service."
+    }
+  },
+  "meta": {
+    "title": "New project",
+    "description": "Landing page of a new project. Replace this description with your own."
+  }
+}

@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gomod
+    directories:
+      - "/services/pkg"
+      - "/services/gateway"
+      - "/services/auth"
+      - "/services/users"
+      - "/services/bot"
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directories:
+      - "/services"
+      - "/apps/admin"
+      - "/apps/client"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
