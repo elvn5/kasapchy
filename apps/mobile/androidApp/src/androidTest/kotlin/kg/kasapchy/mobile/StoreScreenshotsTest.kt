@@ -3,7 +3,6 @@ package kg.kasapchy.mobile
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.provider.MediaStore
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,7 +16,7 @@ class StoreScreenshotsTest {
     private fun tap(text: String) = compose.onNodeWithText(text).performScrollTo().performClick()
     private fun capture(name: String) {
         compose.waitForIdle()
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        val bitmap = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
         val resolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
