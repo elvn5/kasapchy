@@ -97,8 +97,10 @@ Play App Signing Google хранит ключ подписи приложени�
 
 Для публичного запуска нужны:
 
-1. Домен/DNS, TLS и reverse proxy на API; настроенные trusted proxies для корректных
-   лимитов по IP. Не открывать PostgreSQL или Mailpit в интернет.
+1. DNS/TLS уже настроены: `kasapchy.api.ermekten.com` (пока 503),
+   `test-kasapchy.api.ermekten.com/healthz` (200). Перед открытием остальных
+   маршрутов настроить trusted proxies для корректных лимитов по IP.
+   Не открывать PostgreSQL или Mailpit в интернет.
 2. SMTP с STARTTLS, sender и SPF/DKIM/DMARC, APP_ENV=production; убрать Mailpit из
    цепочки доставки реальных писем. Проверить доставку, в том числе Apple relay.
 3. Google OAuth web/Android clients и Apple Services ID/return URL

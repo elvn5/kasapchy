@@ -77,3 +77,23 @@ GitHub Variable: `MARKET_DEPLOY_HOST`. Пароли БД/OTP находятся 
 
 Для проверки через SSH: `ssh -L 18080:127.0.0.1:5700 -L 18025:127.0.0.1:5701 root@<server>`.
 До подключения SMTP не использовать этот сервер как публичный production.
+
+## Домены (12 ноября 2026)
+
+DNS `kasapchy.api.ermekten.com` и `test-kasapchy.api.ermekten.com` направлен на
+сервер. Установлен отдельный Nginx vhost из `deploy/nginx-bootstrap.conf`,
+сертификат Let's Encrypt покрывает оба имени. HTTP перенаправляется на HTTPS.
+Автопродление использует существующий certbot.timer и deploy-hook
+`deploy/renew-nginx.sh` для проверки/reload Nginx после обновления сертификата.
+
+Основной домен пока возвращает 503. На тестовом открыт только `/healthz` →
+`127.0.0.1:5700/healthz`; остальные маршруты возвращают 503. Это намеренное
+ограничение до подключения SMTP и настройки production, не неисправность DNS.
+Mailpit и база по-прежнему недоступны извне. Это ещё не два независимых окружения:
+есть один staging stack, production-домен зарезервирован maintenance-конфигурацией.
+Существующий `api.ermekten.com` обслуживает прежний сервис без изменений.
+
+Nginx и certbot — конфигурация хоста, не часть Docker deploy workflow: перед
+установкой vhost нужен выпущенный сертификат, затем `nginx -t` и reload.
+Открывать `/v1` в production следует после выполнения списка настроек выше и
+настройки доверенного reverse proxy; сейчас SMTP доставляет письма в Mailpit.
