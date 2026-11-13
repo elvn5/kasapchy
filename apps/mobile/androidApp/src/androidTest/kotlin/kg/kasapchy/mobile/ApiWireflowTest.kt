@@ -10,7 +10,7 @@ import org.junit.Test
 /** Runs only with apiDebug against compose.local.yml + the real Go process, never external mail. */
 class ApiWireflowTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
-    private fun tap(text: String) { compose.onNodeWithText(text).performScrollTo().performClick() }
+    private fun tap(text: String) { compose.onNode(hasText(text) and hasClickAction()).performScrollTo().performClick() }
     private fun fill(label: String, value: String) {
         compose.onNode(hasSetTextAction() and hasText(label)).performTextReplacement(value)
         Espresso.closeSoftKeyboard()

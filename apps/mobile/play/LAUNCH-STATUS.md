@@ -89,5 +89,17 @@ https://kasapchy.api.ermekten.com/privacy отвечает HTTP 200 без вх�
   Нельзя сбрасывать пароль или удалять аккаунт лишь по письму с неподтверждённого email.
 - Веб-удаление переведено на пароль; публичный nginx API остаётся закрыт до подготовки
   реального тестового релиза. Сам факт сборки AAB не означает доступности сервиса.
-- Черновик Console Data safety из предыдущего этапа нужно изменить: Username and password
-  вместо Username and other authentication / OAuth, сверить описание карточки и policy.
+- Черновик Console Data safety обновлён и сохранён: Username and password вместо
+  Username and other authentication / OAuth. Описание карточки обновлено локально;
+  его текст в Console ещё нужно синхронизировать перед отправкой.
+
+- Проверки этой версии: Go vet и полный race/integration suite с PostgreSQL прошли;
+  новые тесты проверяют неправильный пароль, повторы регистрации, роль, существующие
+  OTP-аккаунты, лимиты и отзыв сессий после удаления. JVM tests и assembleApiDebug прошли.
+- Android API 30: реальный UI flow password registration → seller product → buyer order
+  → account deletion прошёл с локальным API без SMTP. iOS native allTests остановлен
+  во время первичной загрузки toolchain; iOS проверку не считать завершённой.
+- Подписан production-package AAB kg.kasapchy.mobile, versionCode 1/versionName 1.0.0:
+  androidApp/build/outputs/bundle/release/androidApp-release.aab. Release lint/R8,
+  bundletool validate и jarsigner verify прошли. Это кандидат: публичный API всё ещё 503,
+  в Play AAB не загружен, IARC/графика/доступ для review/closed test ещё не завершены.
