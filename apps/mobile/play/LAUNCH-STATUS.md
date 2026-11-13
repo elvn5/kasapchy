@@ -103,3 +103,7 @@ https://kasapchy.api.ermekten.com/privacy отвечает HTTP 200 без вх�
   androidApp/build/outputs/bundle/release/androidApp-release.aab. Release lint/R8,
   bundletool validate и jarsigner verify прошли. Это кандидат: публичный API всё ещё 503,
   в Play AAB не загружен, IARC/графика/доступ для review/closed test ещё не завершены.
+
+- GitHub Actions run 43396664484 успешно развернул b17339a. На сервере readyz=ready,
+  password/login принимает запросы (400 на пустой JSON), OTP request отключён (403).
+  Публичная /privacy уже содержит bcrypt; /v1/products снаружи всё ещё 503.
