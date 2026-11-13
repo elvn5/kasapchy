@@ -3,11 +3,11 @@
 | Пункт | Сделано | Что блокирует завершение |
 | --- | --- | --- |
 | Google/Apple | Создан отдельный Google Cloud project kasapchy-marketplace; подготовлены package IDs, fingerprints и callback URLs в OAUTH.md | Google support email и consent, создание клиентов; доступ в Apple Developer, primary App ID, live OAuth и Apple token revocation |
-| Владелец / privacy | Серверная policy template и external deletion page реализованы; не публикуются с выдуманными реквизитами | Имя оператора/компании, support email, финальные сроки хранения и согласование текста |
+| Владелец / privacy | Подтверждены ИП Ermek Cherikchiev, Кыргызстан, a.ermek.kg@gmail.com. Подготовлена полная политика с обработкой заказов, журналов и резервных копий; support email сохранён в Play | Политика опубликована на HTTPS /privacy, URL сохранён в Console; self-service deletion и SMTP ещё закрыты |
 | Правила заказов | Текущее поведение и предложение записаны в ORDER-POLICY-DRAFT.md | Зона/стоимость доставки, отмена/возврат/спор, канал поддержки и соответствующая реализация |
 | Инфраструктура | TLS, Actions deploy, encrypted daily/predeploy backups, успешный restore drill; readiness и мониторинг каждые 5 минут | Автоматическое offsite-хранилище, внешний мониторинг/канал уведомлений; SMTP отложен; публичные /v1 закрыты |
 | Release QA | JVM/Android UI, настоящий local API flow, Go race/integration, подписанный demo AAB, lint, Bundletool, ELF/ZIP 16 KB и install smoke | Живой Google/Apple, реальный SMTP, production AAB и физические устройства/16 KB runtime |
-| Play Console | Приложение kg.kasapchy.mobile уже создано, Draft. Сохранены русский текст карточки, Food & Drink и 4 анкеты: Ads / Government / Financial / Health. Console: 4 из 12 задач | Графика не загружена (пользователь отложил разрешение расширению); contact/privacy, access, rating/audience, Data safety, trader status, production AAB и тестирование ещё впереди |
+| Play Console | Приложение kg.kasapchy.mobile уже создано, Draft. Сохранены русский текст карточки, Food & Drink и 4 анкеты: Ads / Government / Financial / Health. Console: 4 анкеты плюс контакт и privacy | Графика не загружена (пользователь отложил разрешение расширению); access, rating/audience, Data safety, trader status, production AAB и тестирование ещё впереди |
 
 13 ноября Console показала уже созданное приложение — повторно Create app не выполнялся.
 [Dashboard](https://play.google.com/console/u/0/developers/8403504172845266761/app/4972055557310372525/app-dashboard).
@@ -39,3 +39,8 @@ SMTP намеренно отложен пользователем. Без нег
 
 Физическое Android-устройство сейчас не подключено — доступен только эмулятор.
 Не подменять недоступные live-проверки демо-сценариями или фиктивными client IDs.
+
+13 ноября: публичный email поддержки сохранён в Store settings; политика
+https://kasapchy.api.ermekten.com/privacy отвечает HTTP 200 без входа, URL сохранён
+в Privacy Policy как изменение для последующего review. Основной /v1 остаётся 503.
+Оператор: ИП Ermek Cherikchiev, Кыргызская Республика (подтверждено владельцем).

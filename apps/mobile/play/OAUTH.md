@@ -2,8 +2,8 @@
 
 12 ноября 2026 создан Google Cloud проект **kasapchy-marketplace**.
 [Google Auth Platform](https://console.cloud.google.com/auth/overview?project=kasapchy-marketplace).
-Branding не завершён: требуется разрешённый владельцем публичный support email;
-личный адрес Google-аккаунта автоматически не выбран. OAuth clients пока не созданы.
+13 ноября владелец разрешил публичный support email `a.ermek.kg@gmail.com`.
+Branding и OAuth clients пока не настроены.
 Биллинг не подключался, доступ IAM не расширялся.
 
 ## Google

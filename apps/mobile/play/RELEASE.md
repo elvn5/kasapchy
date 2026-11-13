@@ -108,9 +108,9 @@ Play App Signing Google хранит ключ подписи приложени�
    цепочки доставки реальных писем. Проверить доставку, в том числе Apple relay.
 3. Google OAuth web/Android clients и Apple Services ID/return URL
    `https://API_DOMAIN/v1/auth/apple/callback`; IDs в API и Android build.
-4. MARKET_OPERATOR_NAME и MARKET_SUPPORT_EMAIL: настоящее имя оператора и контакт.
-   Пока они отсутствуют, /privacy возвращает 503. Проверить текст политики,
-   сроки хранения и законные обязательства по документам о сделках.
+4. MARKET_OPERATOR_NAME и MARKET_SUPPORT_EMAIL заполнены подтверждёнными данными
+   владельца. /privacy опубликована по HTTPS и сохранена в Play Console.
+   При изменении процессов поддерживать текст и сроки хранения в актуальном виде.
 5. Ежедневные зашифрованные копии и restore drill сделаны; локальный мониторинг
    установлен. Остались автоматическая offsite-копия и внешний канал оповещений.
    Текущий workflow проверяет readiness, но автоматически не откатывает миграции.
