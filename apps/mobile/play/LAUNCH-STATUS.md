@@ -107,3 +107,26 @@ https://kasapchy.api.ermekten.com/privacy отвечает HTTP 200 без вх�
 - GitHub Actions run 43396664484 успешно развернул b17339a. На сервере readyz=ready,
   password/login принимает запросы (400 на пустой JSON), OTP request отключён (403).
   Публичная /privacy уже содержит bcrypt; /v1/products снаружи всё ещё 503.
+
+
+13 ноября, подготовка закрытого релиза по запросу «публиковать»:
+- В Console сохранены обновлённое полное описание (email + пароль), страна Kyrgyzstan
+  для Closed testing - Alpha (track 4699056520390756582) и draft release 1 с именем
+  «1.0.0 — закрытый тест» и русскими release notes. AAB ещё не загружен.
+- Run 43398178368 успешно развернул публичный HTTPS API. В production включён
+  APP_ENV=production, MARKET_EMAIL_OTP_ENABLED=false. Receiver применяет nginx-public.conf
+  после readiness только при наличии /opt/kasapchy/enable-public-api; nginx -t и reload
+  с восстановлением предыдущей конфигурации при ошибке. Прочие приложения не менялись.
+- Снаружи проверены: /v1/products, /privacy, /delete-account и deletion JS = 200;
+  /v1/me без токена = 401; /readyz и legacy OTP routes = 404. Внешний IP проксируется
+  доверенным nginx, добавлен общий rate limit. Postgres и readiness не открыты наружу.
+- Подготовлены и через HTTPS проверены отдельные Buyer/Seller review accounts.
+  Пароли только в локальном ~/.config/kasapchy/play-review/accounts.json (0600),
+  в git и чат не выводились. Опубликован один явно помеченный тестовый товар,
+  не предназначенный для реальной продажи; инструкции Google объясняют этот статус.
+- В Sign in details открыта подготовленная форма Buyer без credentials. Отдельное
+  согласие на передачу тестовых credentials Google запрошено, пока не получено.
+- Также ожидаются: согласие IARC, разрешение расширению на file URLs или ручная загрузка
+  AAB/графики, список минимум 12 тестировщиков. Общая команда публиковать не подменяет
+  отдельное принятие юридических условий. Публичный выпуск недоступен до closed test
+  (12 opted-in непрерывно 14 дней) и одобрения production access Google.
