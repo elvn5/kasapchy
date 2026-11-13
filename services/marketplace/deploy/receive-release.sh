@@ -30,6 +30,7 @@ if [[ -x "$base/ops/backup.sh" && -L "$base/current" ]]; then "$base/ops/backup.
 docker compose --project-name kasapchy --env-file "$base/.env" -f "$release/compose.server.yml" up -d --build --remove-orphans
 for attempt in $(seq 1 30); do
   if curl -fsS --max-time 3 http://127.0.0.1:5700/readyz >/dev/null; then
+    if [[ -f "$base/enable-public-api" ]]; then bash "$release/deploy/activate-public-api.sh" "$release"; fi
     if [[ -L "$base/current" ]]; then ln -sfn "$(readlink -f "$base/current")" "$base/previous"; fi
     ln -sfn "$release" "$base/current"
     printf 'Deployed %s\n' "$revision"
