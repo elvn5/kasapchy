@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/your-org/app/marketplace/internal/domain"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -88,6 +89,13 @@ func (r *Repository) Login(ctx context.Context, email, role, provider, hash stri
 	u, e := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 FOR UPDATE", email))
 	if e != nil {
 		return u, e
+	}
+	var passwordAccount bool
+	if e = tx.QueryRow(ctx, "SELECT password_hash IS NOT NULL FROM market_users WHERE id=$1", u.ID).Scan(&passwordAccount); e != nil {
+		return u, e
+	}
+	if passwordAccount {
+		return domain.User{}, domain.ErrUnauthorized
 	}
 	if u.Role != role {
 		return u, domain.ErrConflict
@@ -292,3 +300,59 @@ func (r *Repository) Cleanup(ctx context.Context) error {
 	}
 	return nil
 }
+
+// No upsert: registering an existing email cannot replace credentials or attach a session.
+func (r *Repository) PasswordAuth(ctx context.Context, email, password, role, tokenHash string, register bool) (domain.User, error) {
+	tx, err := r.DB.Begin(ctx)
+	if err != nil {
+		return domain.User{}, err
+	}
+	defer tx.Rollback(ctx)
+	if register {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+		if err != nil {
+			return domain.User{}, err
+		}
+		tag, err := tx.Exec(ctx, `INSERT INTO market_users(email,role,provider,password_hash) VALUES($1,$2,'Email',$3) ON CONFLICT(email) DO NOTHING`, email, role, string(hash))
+		if err != nil {
+			return domain.User{}, err
+		}
+		if tag.RowsAffected() != 1 {
+			return domain.User{}, domain.ErrUnauthorized
+		}
+	} else {
+		var hash string
+		err := tx.QueryRow(ctx, `SELECT COALESCE(password_hash,'') FROM market_users WHERE email=$1 FOR UPDATE`, email).Scan(&hash)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, err
+		}
+		missing := hash == ""
+		if missing {
+			// Keep unknown and non-password accounts on the same expensive verification path.
+			hash = dummyPasswordHash
+		}
+		compareErr := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+		if compareErr != nil || missing {
+			return domain.User{}, domain.ErrUnauthorized
+		}
+	}
+	u, err := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 FOR UPDATE", email))
+	if err != nil {
+		return domain.User{}, err
+	}
+	if u.Role != role {
+		return domain.User{}, domain.ErrUnauthorized
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO market_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '30 days')`, tokenHash, u.ID); err != nil {
+		return domain.User{}, err
+	}
+	return u, tx.Commit(ctx)
+}
+
+var dummyPasswordHash = func() string {
+	hash, err := bcrypt.GenerateFromPassword([]byte("invalid-account-dummy-credential"), 12)
+	if err != nil {
+		panic(err)
+	}
+	return string(hash)
+}()

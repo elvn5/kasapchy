@@ -64,6 +64,9 @@ class DemoStore : AppStore {
         require(page in listOf(Page.Market, Page.Orders, Page.Profile))
         state = state.copy(history = listOf(Route(page)))
     }
+    override fun passwordAuth(email: String, password: String): String? {
+        return "В демо используйте демонстрационный код."
+    }
     override fun requestCode(email: String): String? {
         val normalized = email.trim().lowercase()
         emailError(normalized)?.let { return it }

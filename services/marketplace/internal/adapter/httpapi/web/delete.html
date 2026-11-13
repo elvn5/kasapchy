@@ -3,11 +3,11 @@
 <title>Удаление аккаунта — Касапчы</title>
 <link rel="stylesheet" href="/account-deletion.css">
 <main><p class="brand">касапчы</p><h1>Удаление аккаунта</h1>
-<p>Подтвердите email аккаунта. Будут удалены профиль, сессии, товары и связанные заказы. Отменить удаление нельзя.</p>
+<p>Введите email и пароль аккаунта. Будут удалены профиль, сессии, товары и связанные заказы. Отменить удаление нельзя.</p>
 <form id="request"><label>Email<input id="email" type="email" required autocomplete="email"></label>
 <label>Роль<select id="role"><option value="Buyer">Покупатель</option><option value="Seller">Касапчы</option></select></label>
-<button>Получить код</button></form>
-<form id="confirm" hidden><label>Код из письма<input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"></label>
+<label>Пароль<input id="password" type="password" required autocomplete="current-password"></label>
 <label class="check"><input id="consent" type="checkbox" required> Я понимаю, что аккаунт и связанные данные будут удалены безвозвратно.</label><button>Удалить аккаунт</button></form>
+<p>Резервные копии очищаются в течение 16 дней при штатной работе. Если вы потеряли пароль, обратитесь в поддержку через политику конфиденциальности. Email без пароля не подтверждает владение аккаунтом.</p>
 <p id="status" role="status" aria-live="polite"></p><p><a href="/privacy">Политика конфиденциальности</a></p></main>
 <script src="/account-deletion.js" defer></script></html>

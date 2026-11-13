@@ -28,7 +28,7 @@ func (h Handler) fail(c *gin.Context, e error) {
 	case errors.Is(e, domain.ErrInvalid):
 		code, message = 400, "Проверьте введённые данные."
 	case errors.Is(e, domain.ErrUnauthorized):
-		code, message = 401, "Код неверен или истёк. Войдите снова."
+		code, message = 401, "Не удалось войти. Проверьте данные и выбранную роль."
 	case errors.Is(e, domain.ErrForbidden):
 		code, message = 403, "Это действие недоступно для вашей роли."
 	case errors.Is(e, domain.ErrNotFound):
@@ -75,6 +75,21 @@ func (h Handler) Router() *gin.Engine {
 	})
 	h.web(r)
 	api := r.Group("/v1")
+	for _, action := range []string{"register", "login"} {
+		register := action == "register"
+		api.POST("/auth/password/"+action, func(c *gin.Context) {
+			var req struct{ Email, Password, Role string }
+			if !bind(c, &req) {
+				return
+			}
+			session, err := h.Service.PasswordAuth(c, req.Email, req.Password, req.Role, c.ClientIP(), register)
+			if err != nil {
+				h.fail(c, err)
+				return
+			}
+			c.JSON(200, session)
+		})
+	}
 	api.POST("/auth/email/request", func(c *gin.Context) {
 		var req struct{ Email, Role string }
 		if !bind(c, &req) {

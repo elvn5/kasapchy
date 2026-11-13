@@ -29,18 +29,22 @@ func run() error {
 	if len(secret) < 32 {
 		return errors.New("MARKET_OTP_SECRET must contain at least 32 characters")
 	}
-	address := os.Getenv("MARKET_SMTP_ADDRESS")
-	host, _, e := net.SplitHostPort(address)
-	if e != nil {
-		return errors.New("MARKET_SMTP_ADDRESS must be host:port")
-	}
 	local := os.Getenv("APP_ENV") == "development"
 	if !local {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	from := os.Getenv("MARKET_MAIL_FROM")
-	if from == "" || strings.ContainsAny(from, "\r\n") {
-		return errors.New("MARKET_MAIL_FROM required")
+	var mail usecase.Mailer
+	if os.Getenv("MARKET_EMAIL_OTP_ENABLED") == "true" {
+		address := os.Getenv("MARKET_SMTP_ADDRESS")
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return errors.New("MARKET_SMTP_ADDRESS must be host:port")
+		}
+		from := os.Getenv("MARKET_MAIL_FROM")
+		if from == "" || strings.ContainsAny(from, "\r\n") {
+			return errors.New("MARKET_MAIL_FROM required")
+		}
+		mail = mailer.SMTP{Address: address, Host: host, Username: os.Getenv("MARKET_SMTP_USERNAME"), Password: os.Getenv("MARKET_SMTP_PASSWORD"), From: from, Local: local}
 	}
 	pool, e := pgxpool.New(ctx, os.Getenv("MARKET_DATABASE_URL"))
 	if e != nil {
@@ -72,7 +76,7 @@ func run() error {
 			}
 		}
 	}()
-	service := &usecase.Service{Repo: repo, Secret: []byte(secret), Identity: identity, Mail: mailer.SMTP{Address: address, Host: host, Username: os.Getenv("MARKET_SMTP_USERNAME"), Password: os.Getenv("MARKET_SMTP_PASSWORD"), From: from, Local: local}}
+	service := &usecase.Service{Repo: repo, Secret: []byte(secret), Identity: identity, Mail: mail}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

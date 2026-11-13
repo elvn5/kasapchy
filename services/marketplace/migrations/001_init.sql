@@ -35,3 +35,6 @@ CREATE TABLE IF NOT EXISTS market_oidc_challenges (
  id text PRIMARY KEY, provider text NOT NULL, nonce text NOT NULL, role text NOT NULL,
  proof_hash text NOT NULL DEFAULT '', identity_email text NOT NULL DEFAULT '', expires_at timestamptz NOT NULL DEFAULT now()+interval '10 minutes'
 );
+
+-- Password accounts are unverified identities; never auto-link by email.
+ALTER TABLE market_users ADD COLUMN IF NOT EXISTS password_hash text;

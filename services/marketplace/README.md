@@ -105,3 +105,18 @@ Nginx и certbot — конфигурация хоста, не часть Docker
 Восстановление первой копии проверено на отдельном локальном PostgreSQL.
 Процедуры, пути ключей, ограничения offsite/уведомлений и откат:
 [deploy/OPERATIONS.md](deploy/OPERATIONS.md).
+
+
+### First-release password authentication
+
+`POST /v1/auth/password/register` and `/v1/auth/password/login` take
+`email`, `password` (12–72 UTF-8 bytes), and `role` (`Buyer`/`Seller`).
+They return a session without sending email. Email ownership is not verified.
+Duplicate registration never overwrites a password; verified identities are not
+silently linked to password accounts. bcrypt cost 12; 10 attempts/email and 30/IP
+per 15 minutes. Password reset is not available in this release.
+
+Email OTP is disabled by default in the server process. Set
+`MARKET_EMAIL_OTP_ENABLED=true` only with the intended mail configuration.
+The local compose environment explicitly enables Mailpit for legacy OTP tests.
+Deletion on the web uses the same password, without storing it in browser storage.

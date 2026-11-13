@@ -69,9 +69,10 @@ fun SecondaryButton(text: String, onClick: () -> Unit) {
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 50.dp), enabled = !LocalBusy.current, shape = RoundedCornerShape(15.dp)) { Text(text) }
 }
 @Composable
-fun Field(label: String, value: String, onChange: (String) -> Unit, placeholder: String = "", keyboard: KeyboardType = KeyboardType.Text, readOnly: Boolean = false) {
+fun Field(label: String, value: String, onChange: (String) -> Unit, placeholder: String = "", keyboard: KeyboardType = KeyboardType.Text, readOnly: Boolean = false, password: Boolean = false) {
     OutlinedTextField(value, onChange, Modifier.fillMaxWidth(), label = { Text(label) }, placeholder = { Text(placeholder) },
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), singleLine = true, readOnly = readOnly,
+        visualTransformation = if (password) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         shape = RoundedCornerShape(14.dp))
 }
 @Composable

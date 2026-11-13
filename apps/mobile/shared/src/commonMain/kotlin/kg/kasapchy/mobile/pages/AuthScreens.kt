@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -77,17 +78,33 @@ fun RoleScreen(store: AppStore) = PageColumn {
 @Composable
 fun AuthScreen(store: AppStore, privacyUrl: String = "") = PageColumn {
     var email by rememberSaveable { mutableStateOf(store.state.pendingEmail) }
+    // Passwords must never be persisted in saved instance state.
+    var password by remember(store.state.registering) { mutableStateOf("") }
+    var confirmation by remember(store.state.registering) { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     Badge(store.state.selectedRole.title)
-    Heading(if (store.state.registering) "Начнём с email." else "С возвращением.", "Без пароля. Подтвердите email одноразовым кодом.")
+    Heading(if (store.state.registering) "Начнём с email." else "С возвращением.", if (store.state.isDemo) "Без пароля. Подтвердите email одноразовым кодом." else "Вход по email и паролю. Код из письма не нужен.")
     Field("Email", email, { email = it; error = null }, "you@example.com", KeyboardType.Email)
+    if (!store.state.isDemo) {
+        Field("Пароль", password, { password = it; error = null }, keyboard = KeyboardType.Password, password = true)
+        if (store.state.registering) {
+            Field("Повторите пароль", confirmation, { confirmation = it; error = null }, keyboard = KeyboardType.Password, password = true)
+            Muted("Не менее 12 символов латиницей. Сохраните пароль: восстановление по почте пока недоступно.")
+        } else Muted("Используйте пароль, заданный при регистрации. Восстановление по почте пока недоступно.")
+    }
     ErrorMessage(error)
-    PrimaryButton("Продолжить с email") { error = store.requestCode(email) }
+    PrimaryButton(if (store.state.isDemo) "Продолжить с email" else if (store.state.registering) "Создать аккаунт" else "Войти") {
+        error = if (store.state.isDemo) store.requestCode(email)
+        else if (store.state.registering && password != confirmation) "Пароли не совпадают."
+        else store.passwordAuth(email, password)
+    }
+    if (store.state.isDemo) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider(Modifier.weight(1f)); Muted("или"); HorizontalDivider(Modifier.weight(1f))
     }
     SecondaryButton("Продолжить с Google") { store.startSocial(AuthProvider.Google) }
     SecondaryButton("Продолжить с Apple") { store.startSocial(AuthProvider.Apple) }
+    }
     Muted("Телефон можно добавить позже в профиле — это необязательно.")
     TextButton(onClick = store::toggleAuth, modifier = Modifier.align(Alignment.CenterHorizontally)) {
         Text(if (store.state.registering) "Уже есть аккаунт? Войти" else "Нет аккаунта? Зарегистрироваться")

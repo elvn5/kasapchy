@@ -7,13 +7,13 @@
 | Правила заказов | Текущее поведение и предложение записаны в ORDER-POLICY-DRAFT.md | Зона/стоимость доставки, отмена/возврат/спор, канал поддержки и соответствующая реализация |
 | Инфраструктура | TLS, Actions deploy, encrypted daily/predeploy backups, успешный restore drill; readiness и мониторинг каждые 5 минут | Автоматическое offsite-хранилище, внешний мониторинг/канал уведомлений; SMTP отложен; публичные /v1 закрыты |
 | Release QA | JVM/Android UI, настоящий local API flow, Go race/integration, подписанный demo AAB, lint, Bundletool, ELF/ZIP 16 KB и install smoke | Живой Google/Apple, реальный SMTP, production AAB и физические устройства/16 KB runtime |
-| Play Console | Приложение kg.kasapchy.mobile уже создано, Draft. Сохранены русский текст карточки, Food & Drink и 4 анкеты: Ads / Government / Financial / Health. Console: 4 анкеты плюс контакт и privacy | Графика не загружена (пользователь отложил разрешение расширению); access, rating/audience, Data safety, trader status, production AAB и тестирование ещё впереди |
+| Play Console | Приложение kg.kasapchy.mobile уже создано, Draft. Сохранены русский текст карточки, Food & Drink и 4 анкеты: Ads / Government / Financial / Health. Console: 7 из 12 задач завершены, включая Trader status; Data safety сохранена как draft | Графика не загружена (пользователь отложил разрешение расширению); access, rating/audience, завершение Data safety, production AAB и тестирование ещё впереди |
 
 13 ноября Console показала уже созданное приложение — повторно Create app не выполнялся.
 [Dashboard](https://play.google.com/console/u/0/developers/8403504172845266761/app/4972055557310372525/app-dashboard).
 Сохранённые анкеты: рекламы нет; не государственное; финансовых и медицинских функций нет.
 Изменения находятся в Publishing overview, на review не отправлены. Тексты карточки
-сохранены именно как draft. Категория Food & Drink сохранена отдельно; контакт не указан.
+сохранены именно как draft. Категория Food & Drink и публичный email a.ermek.kg@gmail.com сохранены.
 
 Для этого приложения Console явно требует закрытый тест с минимум 12 участниками,
 непрерывно зарегистрированными в нём не менее 14 дней; сейчас участников 0,
@@ -44,3 +44,50 @@ SMTP намеренно отложен пользователем. Без нег
 https://kasapchy.api.ermekten.com/privacy отвечает HTTP 200 без входа, URL сохранён
 в Privacy Policy как изменение для последующего review. Основной /v1 остаётся 503.
 Оператор: ИП Ermek Cherikchiev, Кыргызская Республика (подтверждено владельцем).
+
+
+13 ноября, продолжение анкет:
+- Пользователь подтвердил аудиторию только 18+ и первоначальный рынок только Кыргызстан.
+  Это решения владельца; возраст и страны ещё не сохранены в соответствующих формах Console.
+- Trader status сохранён: статус предпринимателя применяется к приложению (наследуется
+  от developer account). Необязательный Terms of Service URL оставлен пустым, поскольку
+  правила заказов ещё не утверждены. Dashboard подтверждает 7/12 выполненных задач.
+- Пользователь попросил пока пропустить IARC; согласие с условиями не принято,
+  возрастной рейтинг не получен.
+- Target audience заблокирована Console до завершения Sign in details. Рабочих
+  reviewer credentials пока нет; фиктивные данные и отсутствие ограничений не заявлялись.
+- Data safety заполнена и сохранена кнопкой Save as draft. Финальное сохранение
+  заблокировано незавершённой Target audience. На review не отправлена.
+  Выбраны HTTPS, email + OTP и OAuth (для предполагаемой релизной конфигурации),
+  URL запроса удаления аккаунта https://kasapchy.api.ermekten.com/privacy.
+  Отдельный путь удаления части данных без аккаунта не заявлен.
+- Data safety draft: Name, Email address, User IDs, Address, Phone number,
+  Purchase history, App interactions, Other user-generated content, Device or other IDs.
+  Все сохраняются, не ephemeral. Имя/телефон/адрес/заказы/объявления — optional;
+  email/ID аккаунта/технические запросы/IP — required. Цели: функциональность и
+  управление аккаунтом по типу данных; безопасность для email/ID/IP/запросов;
+  Analytics для диагностики по серверным запросам (без аналитического SDK).
+  Передачи поставщикам обработки и публикации/заказы по инициативе пользователя
+  учтены по исключениям Google из Shared, поэтому preview показывает No data shared.
+  Перед отправкой сверить это с финальной сборкой, OAuth SDK и фактическими поставщиками;
+  отсутствие Shared в форме не означает отсутствия передачи продавцу в privacy policy.
+- Требования Google к удалению допускают страницу с email поддержки и инструкцией:
+  https://support.google.com/googleplay/android-developer/answer/13327111?hl=en
+  Определения сбора/передачи:
+  https://support.google.com/googleplay/android-developer/answer/10787469?hl=en
+
+
+13 ноября, изменение первого релиза по просьбе владельца:
+- Live Android использует email + пароль без подтверждения email; SMTP не нужен для
+  регистрации и входа. Не путать это с входом по одному email: пароль обязателен.
+- Добавлены register/login API, bcrypt cost 12, лимиты IP/email, запрет замены пароля
+  повторной регистрацией и автоматического объединения unverified аккаунта с OTP/OAuth.
+- Google/Apple в live UI скрыты до отдельного включения. Демо продолжает прежний wireflow.
+- Email OTP в серверном процессе выключен по умолчанию; включается только через
+  MARKET_EMAIL_OTP_ENABLED=true. SMTP-параметры нужны только в этом режиме.
+- Восстановление пароля пока отсутствует; UI предупреждает об этом при регистрации.
+  Нельзя сбрасывать пароль или удалять аккаунт лишь по письму с неподтверждённого email.
+- Веб-удаление переведено на пароль; публичный nginx API остаётся закрыт до подготовки
+  реального тестового релиза. Сам факт сборки AAB не означает доступности сервиса.
+- Черновик Console Data safety из предыдущего этапа нужно изменить: Username and password
+  вместо Username and other authentication / OAuth, сверить описание карточки и policy.

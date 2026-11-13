@@ -3,11 +3,9 @@ package kg.kasapchy.mobile
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.espresso.Espresso
-import org.json.JSONObject
 import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
-import java.net.URL
 
 /** Runs only with apiDebug against compose.local.yml + the real Go process, never external mail. */
 class ApiWireflowTest {
@@ -20,32 +18,17 @@ class ApiWireflowTest {
     private fun waitFor(text: String) {
         compose.waitUntil(25000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
-    private fun mailCode(email: String): String {
-        repeat(20) {
-            val messages = JSONObject(URL("http://10.0.2.2:18025/api/v1/messages").readText()).getJSONArray("messages")
-            for (i in 0 until messages.length()) {
-                val item = messages.getJSONObject(i)
-                if (item.getJSONArray("To").getJSONObject(0).getString("Address") == email) {
-                    val message = JSONObject(URL("http://10.0.2.2:18025/api/v1/message/" + item.getString("ID")).readText())
-                    return Regex("\\b[0-9]{6}\\b").find(message.getString("Text"))!!.value
-                }
-            }
-            Thread.sleep(300)
-        }
-        error("Local Mailpit did not receive the test code")
-    }
     private fun login(email: String, seller: Boolean) {
         tap("Создать аккаунт")
         if (seller) tap("Касапчы")
         tap("Продолжить")
         fill("Email", email)
-        tap("Продолжить с email")
-        waitFor("Проверьте почту")
-        fill("Код из письма", mailCode(email))
+        fill("Пароль", "test-only-strong-password")
+        fill("Повторите пароль", "test-only-strong-password")
         tap("Создать аккаунт")
         waitFor("Предложения рядом")
     }
-    @Test fun realEmailSellerProductBuyerOrderAndAccountDeletion() {
+    @Test fun passwordSellerProductBuyerOrderAndAccountDeletion() {
         assumeFalse(BuildConfig.DEMO_MODE)
         val stamp = System.currentTimeMillis()
         login("seller-$stamp@example.com", true)

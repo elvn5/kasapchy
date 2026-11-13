@@ -59,6 +59,15 @@ class NetworkStore(private val api: MarketApi, private val storage: SessionStora
     override fun selectTab(page: Page) { if (state.busy) return; state = state.copy(error = null, history = listOf(Route(page))); refresh() }
     override fun refresh() { runRequest { loadData() } }
     override fun clearError() { state = state.copy(error = null) }
+    override fun passwordAuth(email: String, password: String): String? {
+        val normalized = email.trim().lowercase()
+        emailError(normalized)?.let { return it }
+        if (password.encodeToByteArray().size !in 12..72) return "Пароль должен содержать от 12 до 72 байт (для латиницы — символов)."
+        val action = if (state.registering) "register" else "login"
+        val role = state.selectedRole.name
+        runRequest { signedIn(api.post("/auth/password/$action", mapOf("email" to normalized, "password" to password, "role" to role))) }
+        return null
+    }
     override fun requestCode(email: String): String? {
         val normalized = email.trim().lowercase()
         emailError(normalized)?.let { return it }

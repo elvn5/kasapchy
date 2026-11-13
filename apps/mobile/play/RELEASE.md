@@ -45,16 +45,14 @@ source "$HOME/.config/kasapchy/signing/signing.env"
 # После фактической настройки всех сервисов:
 ./gradlew :androidApp:bundleRelease \
   -Pkasapchy.apiBaseUrl=https://API_DOMAIN \
-  -Pkasapchy.googleClientId=GOOGLE_WEB_CLIENT_ID \
-  -Pkasapchy.appleClientId=APPLE_SERVICES_ID \
   -Pkasapchy.privacyUrl=https://API_DOMAIN/privacy \
   -Pkasapchy.deletionUrl=https://API_DOMAIN/delete-account \
-  -Pkasapchy.versionCode=1 -Pkasapchy.versionName=0.1.0
+  -Pkasapchy.versionCode=1 -Pkasapchy.versionName=1.0.0
 ```
 
 AAB: `androidApp/build/outputs/bundle/<variant>/androidApp-<variant>.aab`.
 Сохраняйте R8 mapping соответствующего релиза из `build/outputs/mapping`.
-Production build проверяет наличие HTTPS URL, OAuth IDs и четырёх переменных
+Production build проверяет наличие HTTPS URL и четырёх переменных
 `KASAPCHY_UPLOAD_*`; эта проверка конфигурации не заменяет проверку живых сервисов.
 
 На машине владельца создан `$HOME/.config/kasapchy/signing/upload.jks`, alias
@@ -152,3 +150,7 @@ HTTPS обеспечивает шифрование передачи тольк�
 [удаление аккаунта](https://support.google.com/googleplay/android-developer/answer/13327111?hl=en),
 [подпись](https://developer.android.com/studio/publish/app-signing),
 [16 KB](https://developer.android.com/guide/practices/page-sizes).
+
+Первый live-релиз использует email/пароль без подтверждения email; SMTP и OAuth
+для этого входа не требуются. Социальные кнопки скрыты в live UI. Восстановление
+пароля пока отсутствует. Подробности и актуальные проверки — в LAUNCH-STATUS.md.

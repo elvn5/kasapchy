@@ -10,6 +10,7 @@ interface AppStore {
     fun navigate(page: Page, id: Int? = null)
     fun back()
     fun selectTab(page: Page)
+    fun passwordAuth(email: String, password: String): String?
     fun requestCode(email: String): String?
     fun confirmCode(code: String): String?
     fun startSocial(provider: AuthProvider)

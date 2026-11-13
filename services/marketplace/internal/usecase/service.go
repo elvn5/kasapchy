@@ -13,6 +13,7 @@ import (
 )
 
 type Repository interface {
+	PasswordAuth(context.Context, string, string, string, string, bool) (domain.User, error)
 	Allow(context.Context, string, int, time.Duration) (bool, error)
 	CreateChallenge(context.Context, string, string, string, string) error
 	ConsumeChallenge(context.Context, string, string) (string, string, error)
@@ -60,6 +61,9 @@ func (s *Service) codeHash(id, code string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 func (s *Service) RequestCode(ctx context.Context, email, role, ip string) (string, error) {
+	if s.Mail == nil {
+		return "", domain.ErrForbidden
+	}
 	email, e := domain.NormalizeEmail(email)
 	if e != nil || !domain.ValidRole(role) {
 		return "", domain.ErrInvalid
@@ -150,4 +154,30 @@ func (s *Service) ApplePoll(ctx context.Context, id, proof string) (domain.Sessi
 		return domain.Session{}, e
 	}
 	return s.login(ctx, email, role, "Apple")
+}
+
+// PasswordAuth does not assert ownership of the email address.
+func (s *Service) PasswordAuth(ctx context.Context, email, password, role, ip string, register bool) (domain.Session, error) {
+	email, err := domain.NormalizeEmail(email)
+	if err != nil || !domain.ValidRole(role) || len(password) < 12 || len(password) > 72 {
+		return domain.Session{}, domain.ErrInvalid
+	}
+	for _, rule := range []struct {
+		key   string
+		limit int
+	}{{"password-ip:" + ip, 30}, {"password-email:" + email, 10}} {
+		ok, err := s.Repo.Allow(ctx, rule.key, rule.limit, 15*time.Minute)
+		if err != nil {
+			return domain.Session{}, err
+		}
+		if !ok {
+			return domain.Session{}, domain.ErrRateLimit
+		}
+	}
+	token := randomToken()
+	u, err := s.Repo.PasswordAuth(ctx, email, password, role, Hash(token), register)
+	if err != nil {
+		return domain.Session{}, err
+	}
+	return domain.Session{Token: token, User: u}, nil
 }

@@ -95,7 +95,7 @@ val verifyProductionReadiness by tasks.registering {
         check(url.scheme == "https" && !url.host.isNullOrBlank() && !url.host.endsWith(".invalid") && url.host != "localhost") {
             "Production API HTTPS URL is not configured. Set kasapchy.apiBaseUrl after deployment."
         }
-        check(googleClientId.get().isNotBlank() && appleClientId.get().isNotBlank()) { "Configure Google and Apple client IDs before production." }
+        // First live release uses email/password; OAuth controls remain hidden until configured.
         check(listOf(privacyUrl.get(), deletionUrl.get()).all { it.startsWith("https://") }) {
             "Configure published privacy and account-deletion HTTPS URLs."
         }

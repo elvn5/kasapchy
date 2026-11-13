@@ -20,6 +20,7 @@ services:
     build: .
     environment:
       APP_ENV: development
+      MARKET_EMAIL_OTP_ENABLED: "true"
       MARKET_DATABASE_URL: postgres://marketplace:local-development-only@db:5432/marketplace?sslmode=disable
       MARKET_OTP_SECRET: local-only-not-for-production-rotate-before-deployment
       MARKET_SMTP_ADDRESS: mail:1025
