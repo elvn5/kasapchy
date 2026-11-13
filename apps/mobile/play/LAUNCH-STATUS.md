@@ -15,6 +15,9 @@
 - Добавлены жалобы на товар/продавца, блокировка и снятие блокировок, правила
   публикации и CLI оператора для рассмотрения жалоб. Нужна регулярная модерация
   владельцем; автоматические уведомления не подключены. Инструкция в OPERATIONS.md.
+- Серверное обновление модерации развёрнуто: GitHub Actions run `43401021656`
+  завершён успешно. Публичные `/content-rules`, `/privacy`, `/delete-account`,
+  `/v1/products` отвечают 200; `/v1/me` без токена — 401; закрытые readyz/OTP — 404.
 - Новый подписанный AAB: versionCode 1 / versionName 1.0.0, Bundletool и jarsigner
   пройдены; SHA-256 `afd473d2bdaabe2d0b99324fdd8facc6b1e4e5e8d0e1ad674068fc1aaa6702e1`.
   JVM tests, release lint и Go race/integration на PostgreSQL прошли. Android API 30
