@@ -4,8 +4,8 @@
 OAuth: [OAUTH.md](OAUTH.md). Правила заказов: [черновик](ORDER-POLICY-DRAFT.md).
 
 Состояние на 12 ноября 2026: Android подключён к настоящему API; API развёрнут
-через GitHub Actions в закрытом staging. Публичный production и карточка приложения
-в Play Console ещё не созданы. Подписанный `demoRelease` — отдельное приложение
+через GitHub Actions в закрытом staging. Публичный production ещё не открыт. На 13 ноября приложение в Play Console
+уже создано как Draft; фактический прогресс описан в LAUNCH-STATUS.md. Подписанный `demoRelease` — отдельное приложение
 `kg.kasapchy.mobile.demo`, его нельзя выдавать за production `kg.kasapchy.mobile`.
 
 iOS использует общий интерфейс и DemoStore. Подключение платформенного OAuth,
