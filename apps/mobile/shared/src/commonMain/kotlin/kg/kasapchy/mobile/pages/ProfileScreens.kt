@@ -48,6 +48,12 @@ fun ProfileScreen(store: AppStore, privacyUrl: String = "", deletionUrl: String 
     SecondaryButton("Выйти из аккаунта", store::logout)
     if (store.state.isDemo) Muted("Демо-данные хранятся до закрытия приложения.")
     else {
+        var confirmUnblock by rememberSaveable { mutableStateOf(false) }
+        TextButton(onClick = { confirmUnblock = true }) { Text("Снять блокировки продавцов") }
+        if (confirmUnblock) AlertDialog(onDismissRequest = { confirmUnblock = false }, title = { Text("Снять все блокировки?") },
+            text = { Text("Товары ранее заблокированных продавцов снова появятся в каталоге.") },
+            confirmButton = { TextButton(onClick = { confirmUnblock = false; store.unblockSellers() }) { Text("Снять блокировки") } },
+            dismissButton = { TextButton(onClick = { confirmUnblock = false }) { Text("Отмена") } })
         var confirmDelete by rememberSaveable { mutableStateOf(false) }
         TextButton(onClick = { confirmDelete = true }) { Text("Удалить аккаунт", color = MaterialTheme.colorScheme.error) }
         if (confirmDelete) AlertDialog(

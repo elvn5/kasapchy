@@ -38,3 +38,18 @@ CREATE TABLE IF NOT EXISTS market_oidc_challenges (
 
 -- Password accounts are unverified identities; never auto-link by email.
 ALTER TABLE market_users ADD COLUMN IF NOT EXISTS password_hash text;
+
+ALTER TABLE market_users ADD COLUMN IF NOT EXISTS suspended boolean NOT NULL DEFAULT false;
+ALTER TABLE market_users ADD COLUMN IF NOT EXISTS content_policy_at timestamptz;
+ALTER TABLE market_products ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS market_blocks (
+ user_id uuid NOT NULL REFERENCES market_users(id) ON DELETE CASCADE,
+ seller_id uuid NOT NULL REFERENCES market_users(id) ON DELETE CASCADE,
+ created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(user_id,seller_id)
+);
+CREATE TABLE IF NOT EXISTS market_reports (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ reporter_id uuid NOT NULL REFERENCES market_users(id) ON DELETE CASCADE,
+ product_id bigint NOT NULL REFERENCES market_products(id) ON DELETE CASCADE,
+ reason text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), resolved_at timestamptz
+);

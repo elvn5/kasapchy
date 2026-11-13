@@ -40,6 +40,9 @@ fun KasapchyApp(store: AppStore, privacyUrl: String = "", deletionUrl: String = 
                         state.error?.let { message ->
                             TextButton(onClick = store::clearError, modifier = Modifier.fillMaxWidth()) { Text(message, color = MaterialTheme.colorScheme.error) }
                         }
+                        state.notice?.let { message ->
+                            TextButton(onClick = store::clearError, modifier = Modifier.fillMaxWidth()) { Text(message) }
+                        }
                         if (state.canGoBack) TopAppBar(
                             title = { Text(when (route.page) {
                                 Page.RoleChoice -> if (state.registering) "Регистрация" else "Вход"

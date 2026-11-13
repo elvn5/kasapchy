@@ -86,7 +86,7 @@ func (r *Repository) Login(ctx context.Context, email, role, provider, hash stri
 	if e != nil {
 		return domain.User{}, e
 	}
-	u, e := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 FOR UPDATE", email))
+	u, e := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 AND NOT suspended FOR UPDATE", email))
 	if e != nil {
 		return u, e
 	}
@@ -111,7 +111,7 @@ func (r *Repository) Login(ctx context.Context, email, role, provider, hash stri
 	return u, tx.Commit(ctx)
 }
 func (r *Repository) Authenticate(ctx context.Context, hash string) (domain.User, error) {
-	u, e := scanUser(r.DB.QueryRow(ctx, `SELECT u.id::text,u.email,u.role,u.name,u.phone,u.provider FROM market_users u JOIN market_sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now()`, hash))
+	u, e := scanUser(r.DB.QueryRow(ctx, `SELECT u.id::text,u.email,u.role,u.name,u.phone,u.provider FROM market_users u JOIN market_sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT u.suspended`, hash))
 	if errors.Is(e, domain.ErrNotFound) {
 		e = domain.ErrUnauthorized
 	}
@@ -139,7 +139,7 @@ func scanProduct(row pgx.Row) (p domain.Product, e error) {
 const productQuery = `SELECT p.id,p.name,p.category,p.price,p.stock,p.description,p.seller_id::text,COALESCE(NULLIF(u.name,''),'Касапчы') FROM market_products p JOIN market_users u ON u.id=p.seller_id`
 
 func (r *Repository) Products(ctx context.Context) ([]domain.Product, error) {
-	rows, e := r.DB.Query(ctx, productQuery+" ORDER BY p.id DESC LIMIT 500")
+	rows, e := r.DB.Query(ctx, productQuery+" WHERE NOT p.hidden AND NOT u.suspended ORDER BY p.id DESC LIMIT 500")
 	if e != nil {
 		return nil, e
 	}
@@ -155,6 +155,12 @@ func (r *Repository) Products(ctx context.Context) ([]domain.Product, error) {
 	return list, rows.Err()
 }
 func (r *Repository) Publish(ctx context.Context, u domain.User, p domain.NewProduct) (domain.Product, error) {
+	if !p.AcceptedContentPolicy {
+		return domain.Product{}, domain.ErrForbidden
+	}
+	if _, err := r.DB.Exec(ctx, "UPDATE market_users SET content_policy_at=now() WHERE id=$1", u.ID); err != nil {
+		return domain.Product{}, err
+	}
 	var id int64
 	e := r.DB.QueryRow(ctx, `INSERT INTO market_products(seller_id,name,category,price,stock,description) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`, u.ID, p.Name, p.Category, p.Price, p.Stock, p.Description).Scan(&id)
 	if e != nil {
@@ -214,7 +220,7 @@ func (r *Repository) Place(ctx context.Context, u domain.User, input domain.NewO
 	if !errors.Is(e, domain.ErrNotFound) {
 		return domain.Order{}, e
 	}
-	p, e := scanProduct(tx.QueryRow(ctx, productQuery+" WHERE p.id=$1 FOR UPDATE OF p", input.ProductID))
+	p, e := scanProduct(tx.QueryRow(ctx, productQuery+" WHERE p.id=$1 AND NOT p.hidden AND NOT u.suspended AND NOT EXISTS(SELECT 1 FROM market_blocks b WHERE b.user_id=$2 AND b.seller_id=p.seller_id) FOR UPDATE OF p", input.ProductID, u.ID))
 	if e != nil {
 		return domain.Order{}, e
 	}
@@ -322,7 +328,7 @@ func (r *Repository) PasswordAuth(ctx context.Context, email, password, role, to
 		}
 	} else {
 		var hash string
-		err := tx.QueryRow(ctx, `SELECT COALESCE(password_hash,'') FROM market_users WHERE email=$1 FOR UPDATE`, email).Scan(&hash)
+		err := tx.QueryRow(ctx, `SELECT COALESCE(password_hash,'') FROM market_users WHERE email=$1 AND NOT suspended FOR UPDATE`, email).Scan(&hash)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, err
 		}
@@ -336,7 +342,7 @@ func (r *Repository) PasswordAuth(ctx context.Context, email, password, role, to
 			return domain.User{}, domain.ErrUnauthorized
 		}
 	}
-	u, err := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 FOR UPDATE", email))
+	u, err := scanUser(tx.QueryRow(ctx, "SELECT "+userColumns+" FROM market_users WHERE email=$1 AND NOT suspended FOR UPDATE", email))
 	if err != nil {
 		return domain.User{}, err
 	}
@@ -356,3 +362,41 @@ var dummyPasswordHash = func() string {
 	}
 	return string(hash)
 }()
+
+func (r *Repository) ProductsForUser(ctx context.Context, id string) ([]domain.Product, error) {
+	rows, err := r.DB.Query(ctx, productQuery+` WHERE NOT p.hidden AND NOT u.suspended AND NOT EXISTS(SELECT 1 FROM market_blocks b WHERE b.user_id=$1 AND b.seller_id=p.seller_id) ORDER BY p.id DESC LIMIT 500`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	list := []domain.Product{}
+	for rows.Next() {
+		p, e := scanProduct(rows)
+		if e != nil {
+			return nil, e
+		}
+		list = append(list, p)
+	}
+	return list, rows.Err()
+}
+func (r *Repository) ReportProduct(ctx context.Context, user string, product int64, reason string) error {
+	tag, err := r.DB.Exec(ctx, `INSERT INTO market_reports(reporter_id,product_id,reason) SELECT $1,id,$3 FROM market_products WHERE id=$2`, user, product, reason)
+	if err == nil && tag.RowsAffected() == 0 {
+		return domain.ErrNotFound
+	}
+	return err
+}
+func (r *Repository) BlockSeller(ctx context.Context, user, seller string) error {
+	if user == seller {
+		return domain.ErrInvalid
+	}
+	tag, err := r.DB.Exec(ctx, `INSERT INTO market_blocks(user_id,seller_id) SELECT $1,id FROM market_users WHERE id::text=$2 AND role='Seller' ON CONFLICT(user_id,seller_id) DO UPDATE SET created_at=now()`, user, seller)
+	if err == nil && tag.RowsAffected() == 0 {
+		return domain.ErrNotFound
+	}
+	return err
+}
+func (r *Repository) UnblockSellers(ctx context.Context, user string) error {
+	_, err := r.DB.Exec(ctx, `DELETE FROM market_blocks WHERE user_id=$1`, user)
+	return err
+}

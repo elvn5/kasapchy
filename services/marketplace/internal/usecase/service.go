@@ -13,6 +13,10 @@ import (
 )
 
 type Repository interface {
+	ProductsForUser(context.Context, string) ([]domain.Product, error)
+	ReportProduct(context.Context, string, int64, string) error
+	BlockSeller(context.Context, string, string) error
+	UnblockSellers(context.Context, string) error
 	PasswordAuth(context.Context, string, string, string, string, bool) (domain.User, error)
 	Allow(context.Context, string, int, time.Duration) (bool, error)
 	CreateChallenge(context.Context, string, string, string, string) error

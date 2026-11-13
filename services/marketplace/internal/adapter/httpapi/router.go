@@ -185,7 +185,22 @@ func (h Handler) Router() *gin.Engine {
 		c.JSON(200, session)
 	})
 	api.GET("/products", func(c *gin.Context) {
-		items, e := h.Service.Repo.Products(c)
+		var items []domain.Product
+		var e error
+		if auth := c.GetHeader("Authorization"); auth != "" {
+			if !strings.HasPrefix(auth, "Bearer ") || len(auth) != 71 {
+				h.fail(c, domain.ErrUnauthorized)
+				return
+			}
+			u, err := h.Service.Repo.Authenticate(c, usecase.Hash(strings.TrimPrefix(auth, "Bearer ")))
+			if err != nil {
+				h.fail(c, err)
+				return
+			}
+			items, e = h.Service.Repo.ProductsForUser(c, u.ID)
+		} else {
+			items, e = h.Service.Repo.Products(c)
+		}
 		if e != nil {
 			h.fail(c, e)
 			return
@@ -208,6 +223,60 @@ func (h Handler) Router() *gin.Engine {
 		c.Set("user", u)
 		c.Set("tokenHash", hash)
 		c.Next()
+	})
+	protected.POST("/products/:id/report", func(c *gin.Context) {
+		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		var req struct{ Reason string }
+		if err != nil || id < 1 {
+			h.fail(c, domain.ErrInvalid)
+			return
+		}
+		if !bind(c, &req) {
+			return
+		}
+		req.Reason = strings.TrimSpace(req.Reason)
+		if len([]rune(req.Reason)) < 3 || len([]rune(req.Reason)) > 500 {
+			h.fail(c, domain.ErrInvalid)
+			return
+		}
+		ok, err := h.Service.Repo.Allow(c, "report:"+user(c).ID, 10, 24*time.Hour)
+		if err != nil {
+			h.fail(c, err)
+			return
+		}
+		if !ok {
+			h.fail(c, domain.ErrRateLimit)
+			return
+		}
+		if err = h.Service.Repo.ReportProduct(c, user(c).ID, id, req.Reason); err != nil {
+			h.fail(c, err)
+			return
+		}
+		c.Status(204)
+	})
+	protected.POST("/me/blocked-sellers", func(c *gin.Context) {
+		var req struct {
+			SellerID string `json:"sellerId"`
+		}
+		if !bind(c, &req) {
+			return
+		}
+		if len(req.SellerID) != 36 {
+			h.fail(c, domain.ErrInvalid)
+			return
+		}
+		if err := h.Service.Repo.BlockSeller(c, user(c).ID, req.SellerID); err != nil {
+			h.fail(c, err)
+			return
+		}
+		c.Status(204)
+	})
+	protected.DELETE("/me/blocked-sellers", func(c *gin.Context) {
+		if err := h.Service.Repo.UnblockSellers(c, user(c).ID); err != nil {
+			h.fail(c, err)
+			return
+		}
+		c.Status(204)
 	})
 	protected.GET("/me", func(c *gin.Context) { c.JSON(200, user(c)) })
 	protected.PATCH("/me", func(c *gin.Context) {

@@ -24,7 +24,10 @@ interface AppStore {
     fun placeOrder(productId: Int, quantity: Int, delivery: Delivery, address: String): String?
     fun showCreatedOrder(id: Int)
     fun advanceOrder(id: Int)
-    fun publishProduct(name: String, category: Category, price: String, stock: String): String?
+    fun publishProduct(name: String, category: Category, price: String, stock: String, acceptedPolicy: Boolean = false): String?
+    fun reportProduct(id: Int, reason: String) {}
+    fun blockSeller(id: String) {}
+    fun unblockSellers() {}
     fun clearError() {}
     fun refresh() {}
     fun deleteAccount() {}

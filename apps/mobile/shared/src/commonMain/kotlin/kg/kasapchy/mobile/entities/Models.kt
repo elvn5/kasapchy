@@ -23,6 +23,7 @@ data class Profile(
     val provider: AuthProvider,
     val name: String = "",
     val phone: String = "",
+    val id: String = "",
 ) {
     val displayName: String get() = name.ifBlank { if (role == Role.Seller) "Мой магазин" else "Покупатель" }
 }

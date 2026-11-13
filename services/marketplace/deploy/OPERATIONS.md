@@ -87,3 +87,30 @@ ssh root@SERVER 'systemctl daemon-reload && systemctl enable --now kasapchy-back
 ```
 
 Не заменять существующие сервисы других проектов или их Nginx-конфигурации.
+
+## Жалобы и модерация объявлений
+
+Оператору необходимо регулярно просматривать очередь и своевременно разбирать
+жалобы: автоматическая оценка содержания и уведомления по SMTP не подключены.
+Доступ к инструменту только через SSH администратора; публичного admin API нет.
+Из `/opt/kasapchy` используйте тот же Compose-файл и env, что при развёртывании:
+
+```sh
+docker compose -p kasapchy --env-file /opt/kasapchy/.env -f /opt/kasapchy/current/compose.server.yml exec -T api /moderate list
+docker compose -p kasapchy --env-file /opt/kasapchy/.env -f /opt/kasapchy/current/compose.server.yml exec -T api /moderate hide-product PRODUCT_ID
+docker compose -p kasapchy --env-file /opt/kasapchy/.env -f /opt/kasapchy/current/compose.server.yml exec -T api /moderate suspend-seller SELLER_UUID
+docker compose -p kasapchy --env-file /opt/kasapchy/.env -f /opt/kasapchy/current/compose.server.yml exec -T api /moderate resolve-report REPORT_ID
+```
+
+Перед действием сопоставьте ID и содержание жалобы с объявлением. Наличие жалобы
+само по себе не доказывает нарушение. `hide-product` исключает товар из каталога
+и новых заказов; `suspend-seller` также запрещает доступ продавцу. Уже оформленные
+заказы сохраняются. После проверки отметьте жалобу рассмотренной. Для исправления
+ошибочного решения доступны `show-product` и `restore-seller`. Обращения по
+решениям принимает a.ermek.kg@gmail.com. Причины жалоб могут содержать личные
+данные: не копируйте очередь в публичные логи, GitHub или чат.
+
+Пользователь может пожаловаться из карточки товара, заблокировать продавца
+и снять все свои блокировки в профиле. Перед каждой публикацией продавец
+принимает `/content-rules`; API сохраняет дату согласия. Жалобы и блокировки
+удаляются вместе с соответствующим аккаунтом.

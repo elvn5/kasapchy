@@ -28,7 +28,7 @@ class NetworkStore(private val api: MarketApi, private val storage: SessionStora
     }
     private fun runRequest(block: suspend () -> Unit) {
         if (state.busy) return
-        state = state.copy(busy = true, error = null)
+        state = state.copy(busy = true, error = null, notice = null)
         activeJob = scope.launch {
             try { block() }
             catch (e: CancellationException) { throw e }
@@ -58,7 +58,7 @@ class NetworkStore(private val api: MarketApi, private val storage: SessionStora
     override fun back() { if (state.route.page == Page.Social && state.busy) { activeJob?.cancel(); state = state.copy(busy = false) }; if (state.canGoBack && !state.busy) state = state.copy(error = null, history = state.history.dropLast(1)) }
     override fun selectTab(page: Page) { if (state.busy) return; state = state.copy(error = null, history = listOf(Route(page))); refresh() }
     override fun refresh() { runRequest { loadData() } }
-    override fun clearError() { state = state.copy(error = null) }
+    override fun clearError() { state = state.copy(error = null, notice = null) }
     override fun passwordAuth(email: String, password: String): String? {
         val normalized = email.trim().lowercase()
         emailError(normalized)?.let { return it }
@@ -114,12 +114,27 @@ class NetworkStore(private val api: MarketApi, private val storage: SessionStora
         val order = order(id) ?: return
         runRequest { api.post<Order>("/orders/$id/advance", mapOf("expectedStatus" to order.status.name)); loadData() }
     }
-    override fun publishProduct(name: String, category: Category, price: String, stock: String): String? {
+    override fun publishProduct(name: String, category: Category, price: String, stock: String, acceptedPolicy: Boolean): String? {
+        if (!acceptedPolicy) return "Примите правила публикации."
         val amount = price.toIntOrNull()?.takeIf { it in 1..100000 } ?: return "Укажите цену от 1 до 100 000 сом."
         val available = stock.toIntOrNull()?.takeIf { it in 1..10000 } ?: return "Укажите остаток от 1 до 10 000 кг."
         if (name.trim().length !in 2..60) return "Название должно содержать от 2 до 60 символов."
-        val payload = buildJsonObject { put("name", name.trim()); put("category", category.name); put("price", amount); put("stock", available); put("description", "") }
+        val payload = buildJsonObject { put("name", name.trim()); put("category", category.name); put("price", amount); put("stock", available); put("description", ""); put("acceptedContentPolicy", acceptedPolicy) }
         runRequest { api.request(HttpMethod.Post, "/products", rawJson = payload.toString()); state = state.copy(history = listOf(Route(Page.Market)), query = "", filter = MarketFilter()); loadData() };return null
     }
+    override fun reportProduct(id: Int, reason: String) { runRequest {
+        api.request(HttpMethod.Post, "/products/$id/report", mapOf("reason" to reason.trim()))
+        state = state.copy(notice = "Жалоба отправлена на рассмотрение.")
+    } }
+    override fun blockSeller(id: String) { runRequest {
+        api.request(HttpMethod.Post, "/me/blocked-sellers", mapOf("sellerId" to id))
+        loadData()
+        state = state.copy(history = listOf(Route(Page.Market)), notice = "Продавец заблокирован. Его товары скрыты.")
+    } }
+    override fun unblockSellers() { runRequest {
+        api.request(HttpMethod.Delete, "/me/blocked-sellers")
+        loadData()
+        state = state.copy(notice = "Блокировки продавцов сняты.")
+    } }
     fun close() { api.close() }
 }

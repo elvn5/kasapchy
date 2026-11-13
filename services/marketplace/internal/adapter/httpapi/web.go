@@ -10,7 +10,7 @@ import (
 var pages embed.FS
 
 func (h Handler) web(r *gin.Engine) {
-	for path, file := range map[string]string{"/delete-account": "web/delete.html", "/account-deletion.js": "web/delete.js", "/account-deletion.css": "web/delete.css"} {
+	for path, file := range map[string]string{"/content-rules": "web/content-rules.html", "/delete-account": "web/delete.html", "/account-deletion.js": "web/delete.js", "/account-deletion.css": "web/delete.css"} {
 		content, _ := pages.ReadFile(file)
 		mime := "text/html; charset=utf-8"
 		if path == "/account-deletion.js" {

@@ -138,6 +138,21 @@ fun ProductScreen(store: AppStore, id: Int?) = PageColumn {
     }
     if (!store.state.isSeller) PrimaryButton(if (product.stock > 0) "Оформить заказ" else "Нет в наличии", product.stock > 0) { store.navigate(Page.Checkout, product.id) }
     else SecondaryButton("Вернуться на рынок") { store.selectTab(Page.Market) }
+    if (!store.state.isDemo && product.sellerId != store.state.profile?.id) {
+        var report by rememberSaveable { mutableStateOf(false) }
+        var block by rememberSaveable { mutableStateOf(false) }
+        var reason by rememberSaveable { mutableStateOf("") }
+        TextButton(onClick = { report = true }) { Text("Пожаловаться на товар или продавца") }
+        TextButton(onClick = { block = true }) { Text("Заблокировать продавца") }
+        if (report) AlertDialog(onDismissRequest = { report = false }, title = { Text("Жалоба") },
+            text = { OutlinedTextField(reason, { reason = it.take(500) }, label = { Text("Причина (3–500 символов)") }) },
+            confirmButton = { TextButton(enabled = reason.trim().length >= 3, onClick = { report = false; store.reportProduct(product.id, reason) }) { Text("Отправить жалобу") } },
+            dismissButton = { TextButton(onClick = { report = false }) { Text("Отмена") } })
+        if (block) AlertDialog(onDismissRequest = { block = false }, title = { Text("Заблокировать продавца?") },
+            text = { Text("Его товары будут скрыты, новые заказы у него станут недоступны. Существующие заказы сохранятся. Снять блокировки можно в профиле.") },
+            confirmButton = { TextButton(onClick = { block = false; store.blockSeller(product.sellerId) }) { Text("Заблокировать") } },
+            dismissButton = { TextButton(onClick = { block = false }) { Text("Отмена") } })
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -148,6 +163,8 @@ fun AddProductScreen(store: AppStore) = PageColumn {
     var price by rememberSaveable { mutableStateOf("") }
     var stock by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var acceptedPolicy by rememberSaveable { mutableStateOf(false) }
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     Heading("На ваш прилавок")
     Field("Название", name, { name = it }, "Например, говяжья мякоть")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -157,5 +174,13 @@ fun AddProductScreen(store: AppStore) = PageColumn {
     Field("В наличии, кг", stock, { stock = it }, "20", KeyboardType.Number)
     Muted("Используется иллюстрация категории.")
     ErrorMessage(error)
-    PrimaryButton("Опубликовать товар") { error = store.publishProduct(name, Category.valueOf(categoryName), price, stock) }
+    if (!store.state.isDemo) {
+        TextButton(onClick = { uriHandler.openUri("https://kasapchy.api.ermekten.com/content-rules") }) { Text("Правила публикации") }
+        Muted("Запрещены незаконные товары, обман, спам, угрозы, ненависть, порнография и чужие персональные данные. Нарушающие правила объявления удаляются; аккаунт может быть заблокирован.")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(acceptedPolicy, { acceptedPolicy = it })
+            Text("Принимаю правила публикации")
+        }
+    }
+    PrimaryButton("Опубликовать товар") { error = store.publishProduct(name, Category.valueOf(categoryName), price, stock, acceptedPolicy) }
 }

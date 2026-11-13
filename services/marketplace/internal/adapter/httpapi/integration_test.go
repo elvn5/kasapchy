@@ -121,7 +121,7 @@ func TestMarketplaceIsolationAndIdempotency(t *testing.T) {
 	buyer := f.login("buyer@example.com", "Buyer")
 	other := f.login("other@example.com", "Seller")
 	var product domain.Product
-	input := domain.NewProduct{Name: "Говяжья мякоть", Category: "Beef", Price: 680, Stock: 2}
+	input := domain.NewProduct{AcceptedContentPolicy: true, Name: "Говяжья мякоть", Category: "Beef", Price: 680, Stock: 2}
 	f.request("POST", "/products", buyer.Token, input, 403, nil)
 	f.request("POST", "/products", seller.Token, input, 201, &product)
 	orderInput := domain.NewOrder{ProductID: product.ID, Quantity: 2, Delivery: "Courier", Address: "Чуй 100", RequestID: "stable-request-id-001"}
@@ -194,4 +194,49 @@ func TestOtpAttemptsCooldownAndRoleCannotBeChanged(t *testing.T) {
 	real = f.mail.codes[session.User.Email]
 	f.mail.mu.Unlock()
 	f.request("POST", "/auth/email/verify", "", map[string]string{"challengeId": c["challengeId"], "code": real}, 409, nil)
+}
+
+func TestContentModerationAndBlocking(t *testing.T) {
+	f := setup(t)
+	seller := f.login("seller@example.com", "Seller")
+	buyer := f.login("buyer@example.com", "Buyer")
+	other := f.login("other@example.com", "Buyer")
+	input := domain.NewProduct{Name: "Тестовый товар", Category: "Beef", Price: 680, Stock: 10}
+	f.request("POST", "/products", seller.Token, input, 403, nil)
+	input.AcceptedContentPolicy = true
+	var product domain.Product
+	f.request("POST", "/products", seller.Token, input, 201, &product)
+	report := fmt.Sprintf("/products/%d/report", product.ID)
+	f.request("POST", report, "", map[string]string{"reason": "Обман в описании"}, 401, nil)
+	f.request("POST", report, buyer.Token, map[string]string{"reason": "Обман в описании"}, 204, nil)
+	var count int
+	if err := f.db.QueryRow(context.Background(), "SELECT count(*) FROM market_reports WHERE product_id=$1 AND reporter_id=$2", product.ID, buyer.User.ID).Scan(&count); err != nil || count != 1 {
+		t.Fatalf("report not persisted: %d %v", count, err)
+	}
+	f.request("POST", "/me/blocked-sellers", buyer.Token, map[string]string{"sellerId": seller.User.ID}, 204, nil)
+	checkFeed := func(token string, want int) {
+		t.Helper()
+		var products []domain.Product
+		f.request("GET", "/products", token, nil, 200, &products)
+		if len(products) != want {
+			t.Fatalf("feed has %d want %d", len(products), want)
+		}
+	}
+	checkFeed(buyer.Token, 0)
+	checkFeed(other.Token, 1)
+	f.request("POST", "/orders", buyer.Token, domain.NewOrder{ProductID: product.ID, Quantity: 1, Delivery: "Pickup", RequestID: "blocked-order-test-001"}, 404, nil)
+	f.request("DELETE", "/me/blocked-sellers", buyer.Token, nil, 204, nil)
+	checkFeed(buyer.Token, 1)
+	if _, err := f.db.Exec(context.Background(), "UPDATE market_products SET hidden=true WHERE id=$1", product.ID); err != nil {
+		t.Fatal(err)
+	}
+	checkFeed("", 0)
+	if _, err := f.db.Exec(context.Background(), "UPDATE market_products SET hidden=false WHERE id=$1", product.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.Exec(context.Background(), "UPDATE market_users SET suspended=true WHERE id=$1", seller.User.ID); err != nil {
+		t.Fatal(err)
+	}
+	checkFeed(other.Token, 0)
+	f.request("GET", "/me", seller.Token, nil, 401, nil)
 }

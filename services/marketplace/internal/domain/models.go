@@ -51,11 +51,12 @@ type Session struct {
 	User  User   `json:"user"`
 }
 type NewProduct struct {
-	Name        string `json:"name"`
-	Category    string `json:"category"`
-	Price       int    `json:"price"`
-	Stock       int    `json:"stock"`
-	Description string `json:"description"`
+	AcceptedContentPolicy bool   `json:"acceptedContentPolicy"`
+	Name                  string `json:"name"`
+	Category              string `json:"category"`
+	Price                 int    `json:"price"`
+	Stock                 int    `json:"stock"`
+	Description           string `json:"description"`
 }
 type NewOrder struct {
 	ProductID int64  `json:"productId"`

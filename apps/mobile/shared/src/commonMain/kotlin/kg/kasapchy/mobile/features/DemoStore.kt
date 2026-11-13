@@ -23,6 +23,7 @@ data class AppState(
     val isDemo: Boolean = true,
     val busy: Boolean = false,
     val error: String? = null,
+    val notice: String? = null,
     val history: List<Route> = listOf(Route(Page.Welcome)),
     val selectedRole: Role = Role.Buyer,
     val registering: Boolean = true,
@@ -135,7 +136,7 @@ class DemoStore : AppStore {
             if (it.id == id && it.product.sellerId == DemoData.sellerId) it.copy(status = it.status.next()) else it
         })
     }
-    override fun publishProduct(name: String, category: Category, price: String, stock: String): String? {
+    override fun publishProduct(name: String, category: Category, price: String, stock: String, acceptedPolicy: Boolean): String? {
         val profile = state.profile ?: return "Сначала войдите в аккаунт."
         if (profile.role != Role.Seller) return "Товары добавляют касапчы."
         if (name.trim().length !in 2..60) return "Название должно содержать от 2 до 60 символов."
